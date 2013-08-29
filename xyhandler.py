@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
 #import requests
-#from oauth_hook import OAuthHook
-#from requests import request
 from rauth import OAuth1Service
 from urlparse import parse_qs
 import webbrowser
