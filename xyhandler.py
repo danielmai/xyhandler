@@ -6,6 +6,10 @@ from urlparse import parse_qs
 import webbrowser
 import csv
 import time
+import logging
+log = logging.getLogger(__name__)
+logfmt = '%(asctime)s %(levelname)s: %(message)s'
+logging.basicConfig(format=logfmt,level=logging.INFO)
 
 BaseAccessUrl     = 'https://api.login.yahoo.com/oauth/v2/'
 GetTokenUrl       = BaseAccessUrl + 'get_token'
@@ -44,6 +48,7 @@ class xYHandler(object):
     f.close
 
   def reg_user(self):
+    log.info("Calling reg_user")
     request_token, request_token_secret = self.yahoo.get_request_token(data = {'oauth_callback': CallbackUrl})
     self.authd['oauth_token'] = request_token
     self.authd['oauth_token_secret'] = request_token_secret
@@ -63,17 +68,29 @@ class xYHandler(object):
 
   def refresh_session(self):
     session = self.yahoo.get_session((self.authd['access_token'], self.authd['access_token_secret']))
+    time.sleep(.5)
     return session
 
   def api_req(self, querystring, req_meth='GET', data=None, headers=None):
+    log.info("Calling api_req")
     url = BaseApiUrl + querystring
     params={'format': 'json'}
     if ('oauth_token' not in self.authd) or ('oauth_token_secret' not in self.authd) or (not (self.authd['oauth_token'] and self.authd['oauth_token_secret'])):
+      log.info("Inside first if statement in api_req.")
       session = self.reg_user()
     else:
+      log.info("Inside else clause in api_req.")
       session = self.refresh_session()
     query = session.get(url, params=params)
+
+    log.info("query = %s", query.text)
+    log.info("header = %s", query.headers)
+
+    # We may need to add sleep statement here
+    
     if query.status_code != 200: #We have both authtokens but are being rejected. Assume token expired. This could be a LOT more robust
+      log.warn("Status code is %d", query.status_code)
+      log.warn("query = %s", query.text)
       session = self.reg_user()
       query = session.get(url, params=params)
     return query
